@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Cờ Vua 3D Online</title>
+    <link rel="stylesheet" href="/client/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- Khu vực hiển thị 3D -->
+      <main id="viewport">
+        <canvas id="chess-canvas"></canvas>
+
+        <!-- Thanh công cụ nổi phía trên -->
+        <div class="hud-toolbar">
+          <div class="hud-title">
+            <span class="dot"></span>
+            <span>Cờ Vua 3D</span>
+            <span id="turn-indicator" class="turn-pill turn-white">Lượt Quân Trắng</span>
+            <span id="role-badge" class="role-badge hidden"></span>
+          </div>
+          <div class="hud-actions">
+            <button id="btn-toggle-audio" class="btn" type="button" title="Bật/tắt âm thanh">Âm thanh: Bật</button>
+            <button id="btn-toggle-sidebar" class="btn mobile-only" type="button">Bảng điều khiển</button>
+          </div>
+        </div>
+
+        <!-- Thông báo nổi ngắn -->
+        <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+        <!-- Gợi ý thao tác góc dưới -->
+        <div id="hud-status" class="hud-status">Đang khởi tạo cảnh 3D...</div>
+
+        <!-- Màn hình Lobby (hiển thị tại /) -->
+        <div id="lobby-overlay" class="overlay hidden" role="dialog" aria-modal="true">
+          <div class="overlay-card lobby-card">
+            <div class="lobby-badge">3D • Realtime • 2 Người Chơi</div>
+            <h2>Cờ Vua 3D Online</h2>
+            <p class="muted">Tạo phòng và gửi link cho bạn bè để đấu cờ trực tiếp trên trình duyệt.</p>
+
+            <div class="form-group">
+              <label for="input-player-name">Tên hiển thị của bạn</label>
+              <input
+                id="input-player-name"
+                class="text-input"
+                type="text"
+                maxlength="24"
+                placeholder="VD: Minh, An..."
+                autocomplete="nickname"
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Chế độ đồng hồ</label>
+              <div id="tc-selector" class="tc-selector" role="radiogroup" aria-label="Chế độ đồng hồ">
+                <button type="button" class="tc-chip" data-tc="3+2">3+2</button>
+                <button type="button" class="tc-chip" data-tc="5+0">5+0</button>
+                <button type="button" class="tc-chip tc-active" data-tc="10+0">10+0</button>
+                <button type="button" class="tc-chip" data-tc="15+10">15+10</button>
+                <button type="button" class="tc-chip" data-tc="unlimited">Không giới hạn</button>
+              </div>
+            </div>
+
+            <button id="btn-create-room" class="btn btn-primary btn-block" type="button">
+              Tạo phòng mới
+            </button>
+
+            <div class="divider"><span>hoặc vào phòng có sẵn</span></div>
+
+            <form id="form-join-room" class="join-form">
+              <input
+                id="input-room-code"
+                class="text-input"
+                type="text"
+                placeholder="Nhập mã phòng hoặc dán link..."
+                autocomplete="off"
+              />
+              <button class="btn" type="submit">Vào</button>
+            </form>
+
+            <button id="btn-play-local" class="btn btn-ghost btn-block" type="button">
+              Chơi thử cục bộ (1 máy)
+            </button>
+          </div>
+        </div>
+
+        <!-- Hộp thông báo lỗi phòng / mở trùng tab -->
+        <div id="room-modal-overlay" class="overlay hidden" role="alertdialog" aria-modal="true">
+          <div class="overlay-card">
+            <h2 id="room-modal-title">Thông báo phòng</h2>
+            <p id="room-modal-message" class="muted"></p>
+            <div id="room-modal-actions" class="modal-actions"></div>
+          </div>
+        </div>
+
+        <!-- Hộp chọn quân phong cấp -->
+        <div id="promotion-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="promo-title">
+          <div class="overlay-card promo-card">
+            <h2 id="promo-title">Chọn quân phong cấp</h2>
+            <p class="muted">Chọn quân cờ muốn thăng cấp cho Tốt</p>
+            <div id="promotion-choices" class="promo-choices"></div>
+            <button id="btn-promo-cancel" class="btn" type="button">Hủy</button>
+          </div>
+        </div>
+
+        <!-- Màn hình tải model có thanh tiến trình -->
+        <div id="loading-overlay" class="overlay">
+          <div class="overlay-card">
+            <div class="spinner" aria-hidden="true"></div>
+            <h2 id="loading-title">Đang tải bộ cờ 3D...</h2>
+            <p id="loading-detail" class="muted">Đang tải mô hình 3D bàn cờ và quân cờ...</p>
+            <div class="progress-track">
+              <div id="loading-bar" class="progress-bar" style="width: 0%"></div>
+            </div>
+            <div id="loading-percent" class="progress-percent">0%</div>
+          </div>
+        </div>
+
+        <!-- Màn hình báo lỗi nếu tải model hoặc WebGL thất bại -->
+        <div id="error-overlay" class="overlay hidden" role="alert">
+          <div class="overlay-card error-card">
+            <h2>Không thể khởi chạy cảnh 3D</h2>
+            <p id="error-message" class="error-text"></p>
+            <button id="btn-retry" class="btn btn-primary" type="button">Thử lại</button>
+          </div>
+        </div>
+      </main>
+
+      <!-- Panel bên cạnh -->
+      <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-title-row">
+            <h1 id="sidebar-mode-title">Cờ Vua 3D</h1>
+            <span id="conn-badge" class="conn-badge hidden">Kết nối...</span>
+          </div>
+          <p id="sidebar-sub" class="sidebar-sub">Luật cờ đầy đủ (chess.js)</p>
+        </div>
+
+        <!-- Thanh thông tin phòng (chỉ hiện khi chơi online) -->
+        <section id="room-bar" class="panel-section room-bar hidden">
+          <div class="room-code-row">
+            <div>
+              <div class="room-label">Mã phòng • <span id="room-tc-label">10+0</span></div>
+              <div id="room-code-value" class="room-code">--------</div>
+            </div>
+            <button id="btn-copy-link" class="btn btn-primary" type="button">Copy link</button>
+          </div>
+          <div id="spectator-info" class="spectator-info hidden"></div>
+        </section>
+
+        <!-- Trạng thái ván đấu -->
+        <div id="game-status-banner" class="status-banner tone-normal">
+          Đang chờ tải bàn cờ...
+        </div>
+
+        <!-- Thanh đề nghị hòa từ đối thủ -->
+        <div id="draw-offer-banner" class="draw-offer-banner hidden">
+          <div id="draw-offer-text" class="draw-offer-text">Đối thủ đề nghị hòa</div>
+          <div class="draw-offer-actions">
+            <button id="btn-accept-draw" class="btn btn-primary btn-sm" type="button">Chấp nhận</button>
+            <button id="btn-decline-draw" class="btn btn-sm" type="button">Từ chối</button>
+          </div>
+        </div>
+
+        <!-- Thông tin 2 bên, đồng hồ & quân đã bị bắt -->
+        <section class="panel-section players-box">
+          <div class="player-row" id="player-row-b">
+            <div class="player-head">
+              <span class="swatch swatch-black"></span>
+              <span id="player-name-b" class="player-name">Quân Đen</span>
+              <span id="player-conn-b" class="conn-dot conn-idle" title="Chưa vào"></span>
+              <span id="clock-b" class="clock-box hidden">10:00</span>
+            </div>
+            <div id="captured-by-black" class="captured-row"></div>
+          </div>
+
+          <div class="player-row" id="player-row-w">
+            <div class="player-head">
+              <span class="swatch swatch-white"></span>
+              <span id="player-name-w" class="player-name">Quân Trắng</span>
+              <span id="player-conn-w" class="conn-dot conn-idle" title="Chưa vào"></span>
+              <span id="clock-w" class="clock-box hidden">10:00</span>
+            </div>
+            <div id="captured-by-white" class="captured-row"></div>
+          </div>
+        </section>
+
+        <!-- Lịch sử nước đi (SAN) & Trò chuyện -->
+        <section class="panel-section moves-section">
+          <div class="panel-tabs">
+            <button id="tab-moves" class="panel-tab tab-active" type="button">Nước đi (SAN)</button>
+            <button id="tab-chat" class="panel-tab hidden" type="button">
+              Trò chuyện
+              <span id="chat-unread-badge" class="unread-badge hidden">0</span>
+            </button>
+          </div>
+
+          <div id="pane-moves" class="tab-pane">
+            <div id="move-list" class="move-list"></div>
+          </div>
+
+          <div id="pane-chat" class="tab-pane hidden">
+            <div id="chat-list" class="chat-list"></div>
+            <form id="chat-form" class="chat-form">
+              <input
+                id="chat-input"
+                class="text-input chat-input"
+                type="text"
+                maxlength="200"
+                placeholder="Nhắn tin cho đối thủ..."
+                autocomplete="off"
+              />
+              <button id="btn-chat-send" class="btn btn-primary btn-sm" type="submit">Gửi</button>
+            </form>
+          </div>
+        </section>
+
+        <!-- Nút điều khiển -->
+        <section class="panel-section controls-grid">
+          <button id="btn-offer-draw" class="btn hidden" type="button">Xin hòa</button>
+          <button id="btn-resign" class="btn btn-danger hidden" type="button">Đầu hàng</button>
+          <button id="btn-rematch" class="btn btn-primary hidden" type="button">Chơi lại</button>
+          <button id="btn-new-game" class="btn btn-primary" type="button">Ván mới</button>
+          <button id="btn-undo" class="btn" type="button" disabled>Đi lại</button>
+          <button id="btn-flip-board" class="btn" type="button">Lật góc nhìn</button>
+          <button id="btn-toggle-coords" class="btn" type="button">Ẩn tọa độ</button>
+          <button id="btn-home" class="btn hidden" type="button">Trang chủ</button>
+        </section>
+      </aside>
+    </div>
+
+    <script type="module" src="/client/main.js"></script>
+  </body>
+</html>

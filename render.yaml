@@ -1,0 +1,15 @@
+# Cấu hình Render Blueprint cho Cờ Vua 3D Online
+# Hỗ trợ WebSocket (Socket.IO) bền vững trên 1 instance Node.js (trạng thái phòng lưu trong RAM)
+services:
+  - type: web
+    name: web-game-chess
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+

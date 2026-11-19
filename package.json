@@ -1,0 +1,27 @@
+{
+  "name": "web-game-chess",
+  "version": "1.0.0",
+  "description": "Game cờ vua 3D online 2 người chơi với Three.js, Express, Socket.IO và chess.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node server/index.js --dev",
+    "build": "vite build",
+    "start": "node server/index.js",
+    "inspect-glb": "node scripts/inspect-glb.mjs",
+    "optimize-glb": "node scripts/optimize-glb.mjs"
+  },
+  "dependencies": {
+    "chess.js": "^1.0.0",
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
+    "three": "0.160.0"
+  },
+  "devDependencies": {
+    "@gltf-transform/core": "^4.1.2",
+    "@gltf-transform/extensions": "^4.1.2",
+    "meshoptimizer": "^0.21.0",
+    "sharp": "^0.33.5",
+    "vite": "^5.4.11"
+  }
+}

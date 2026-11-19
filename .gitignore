@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+.env.*
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+inspect-report.txt
+
+# File model gốc 145 MB chỉ giữ ở máy local; bản deploy dùng public/models/chess_set_opt.glb
+public/models/chess_set.glb
+
